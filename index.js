@@ -1,8 +1,16 @@
+// get the name and the sign of a player and returns them wrapped in an object
+const player = (name, sign) => {
+  return { name, sign };
+};
+
+// the Gameboard factory represents the state of the board
+// the board is an object that simulate a 2D 3x3 array, every cell is initialized with null
+// Manages the reset and addition of elements
 const gameBoard = (function () {
   const board = {
-    0: ["X", "O", "O"],
-    1: ["O", "X", "O"],
-    2: [null, "O", "X"],
+    0: [null, null, null],
+    1: [null, null, null],
+    2: [null, null, null],
   };
 
   const clearBoard = () => {
@@ -11,6 +19,9 @@ const gameBoard = (function () {
     }
   };
 
+  // The index contains a 2 digit string representing:
+  // 1 digit = row , 2 digit = column
+  // example: index = "10" --> board[1][0]
   const updateBoard = (sign, index) => {
     const [row, col] = index.split("");
     if (board[row][col] === null) {
@@ -23,11 +34,18 @@ const gameBoard = (function () {
   return { clearBoard, updateBoard, boardStatus };
 })();
 
+// The gameController factory represent the state of the game
+// Look for possible tris and determine the end and winner of a game
+// Inherits the board state from gameBoard
 const gameController = (function () {
   const { boardStatus } = gameBoard;
-  let winner;
+  const players = [player("player 1", "X"), player("player 2", "O")];
+  let winnerSign = "";
+  let winner = "";
   let gameEnded = false;
 
+  // Check every cell of a determined tris of the board
+  // Returns true if all 3 are equal and !null or false if not
   function checkCombination(cells) {
     return cells.every((cell) => cell !== null && cell === cells[0]);
   }
@@ -42,10 +60,12 @@ const gameController = (function () {
       let column = [currentBoard[0][i], currentBoard[1][i], currentBoard[2][i]];
 
       if (checkCombination(row)) {
-        winner = row[0];
+        winnerSign = row[0];
+        break; // Stops the cicle if a winnerSign combination is found
       }
       if (checkCombination(column)) {
-        winner = column[0];
+        winnerSign = column[0];
+        break;
       }
     }
     // Main and Secondary diagonal
@@ -53,19 +73,25 @@ const gameController = (function () {
     let diagonal2 = [currentBoard[0][2], currentBoard[1][1], currentBoard[2][0]];
 
     if (checkCombination(diagonal1)) {
-      winner = diagonal1[0];
+      winnerSign = diagonal1[0];
     }
     if (checkCombination(diagonal2)) {
-      winner = diagonal2[0];
-    }
-
-    if (winner) {
-      gameEnded = true;
+      winnerSign = diagonal2[0];
     }
   }
 
-  const gameStatus = () => gameEnded;
-  const getWinner = () => winner;
+  // FIXME: da sistemare la logica di fine gioco e decisione vincitore
+  const gameOver = () => {
+    gameEnded = winner ? true : false;
+  };
+  const isGameOver = () => gameEnded;
 
-  return { findWinningCombinations, gameStatus, getWinner };
+  const setGameWinner = () => {
+    if (winnerSign) {
+      winner = winnerSign === "X" ? players[0] : players[1];
+    }
+  };
+  const getGameWinner = () => winner;
+
+  return { findWinningCombinations, gameOver, isGameOver, setGameWinner, getGameWinner };
 })();
