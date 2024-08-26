@@ -5,7 +5,7 @@ const player = (name, sign) => {
 
 // the Gameboard factory represents the state of the board
 // the board is an object that simulate a 2D 3x3 array, every cell is initialized with null
-// Manages the reset and addition of elements
+// Manages the reset, addition and the current stautus of the board
 const gameBoard = (function () {
   const board = {
     0: [null, null, null],
@@ -35,12 +35,13 @@ const gameBoard = (function () {
 })();
 
 // The gameController factory represent the state of the game
-// Look for possible tris and determine the end and winner of a game
+// takes care of updating, resetting and finding any winning combinations in the board
 const gameController = (function () {
   const board = gameBoard;
   const players = [player("player 1", "X"), player("player 2", "O")];
   let currentPlayer = players[0];
   let gameEnd = false;
+  let draw = false;
 
   const playRound = (sign, index) => {
     board.update(sign, index);
@@ -52,6 +53,12 @@ const gameController = (function () {
   // Returns true if all 3 are equal and !null or false if not
   const checkCombination = (cells) => {
     return cells.every((cell) => cell !== null && cell === cells[0]);
+  };
+
+  const checkDraw = (board) => {
+    return Object.values(board)
+      .flat()
+      .every((cell) => cell !== null);
   };
 
   // Finds if a tris has been made in all the possible board combinations
@@ -80,24 +87,35 @@ const gameController = (function () {
         gameEnd = true;
       }
     }
+    if (checkDraw(currentBoard)) {
+      draw = true;
+    }
   };
 
   const isGameOver = () => gameEnd;
+  const isDraw = () => draw;
   const getCurrentPlayer = () => currentPlayer;
 
   const newGame = () => {
     board.clear();
     gameEnd = false;
+    draw = false;
     currentPlayer = players[0];
   };
 
-  return { playRound, getCurrentPlayer, isGameOver, newGame };
+  return { playRound, getCurrentPlayer, isGameOver, isDraw, newGame };
 })();
 
+// The gameUI factory only manages the display of the game on the web page
+// The actual gameplay and controls are done in the gameBoard and gameController factory
 const gameUI = (function (doc) {
   const controller = gameController;
   const boardContainer = doc.querySelector(".board-container");
-  const winnerParagraph = doc.querySelector(".winner");
+  const dialog = doc.querySelector(".win-popup");
+  const winnerParagraph = doc.querySelector(".winner-message");
+  const Reset = doc.querySelector(".new-game");
+  // The indexes of the cells in the page match the indexes of the board
+  // So when i click a cell i know in what position it is
   const index = ["00", "01", "02", "10", "11", "12", "20", "21", "22"];
 
   const createBoard = () => {
@@ -108,23 +126,42 @@ const gameUI = (function (doc) {
     }
   };
 
+  // Based on the cells that are clicked the gameBoard is updated and gameController searches for any winning combinations
+  // When a combination is found a modal is displayed with the name of the winner, when closed it will reset the game
   const playGame = () => {
+    // initial board
     createBoard();
 
     boardContainer.addEventListener("click", (event) => {
       const cell = event.target.closest(".cell");
-      const cellIndex = cell.classList[1];
       const currentPlayer = controller.getCurrentPlayer();
 
-      if (!cell.textContent) {
+      if (cell && !cell.textContent) {
+        const cellIndex = cell.classList[1];
         cell.textContent = currentPlayer.sign;
         controller.playRound(currentPlayer.sign, cellIndex);
         console.table(gameBoard.status());
       }
+
+      // Checks if the game has finished
       if (controller.isGameOver()) {
-        winnerParagraph.textContent = currentPlayer.name;
-        //TODO: aggiungere messaggio vittoria
+        dialog.showModal();
+        winnerParagraph.textContent = `${currentPlayer.name} Wins!`;
       }
+
+      // Checks if all the cells have been filled but no tris has been made
+      if (controller.isDraw() && !controller.isGameOver()) {
+        dialog.showModal();
+        winnerParagraph.textContent = "It's a draw";
+      }
+    });
+
+    // deletes the old board and create a new one, also reset the Board object
+    Reset.addEventListener("click", () => {
+      dialog.close();
+      boardContainer.innerHTML = "";
+      createBoard();
+      controller.newGame();
     });
   };
 
@@ -132,5 +169,4 @@ const gameUI = (function (doc) {
 })(document);
 
 const interface = gameUI;
-
 interface.playGame();
