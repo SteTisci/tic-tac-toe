@@ -1,10 +1,11 @@
 .board-container {
-    width: 300px;
-    height: 300px;
+    width: 302px;
+    height: 302px;
     display: grid;
     grid-template-columns: repeat(auto-fill, 100px);
     grid-auto-rows: 100px;
     grid-auto-flow: row;
+    gap: 1px 1px;
 }
 
 .cell {
