@@ -3,10 +3,10 @@ const player = (name, sign) => {
   return { name, sign };
 };
 
-// the Gameboard factory represents the state of the board
-// the board is an object that simulate a 2D 3x3 array, every cell is initialized with null
+// The Gameboard factory represents the state of the board
 // Manages the reset, addition and the current stautus of the board
 const gameBoard = (function () {
+  // The board is an object that simulate a 2D 3x3 array, every cell is initialized with null
   const board = {
     0: [null, null, null],
     1: [null, null, null],
@@ -35,26 +35,19 @@ const gameBoard = (function () {
 })();
 
 // The gameController factory represent the state of the game
-// takes care of updating, resetting and finding any winning combinations in the board
+// Takes care of updating, resetting and finding any winning combinations in the board
 const gameController = (function () {
-  const board = gameBoard;
-  const players = [player("player 1", "X"), player("player 2", "O")];
-  let currentPlayer = players[0];
+  let winCombo = "";
   let gameEnd = false;
   let draw = false;
 
-  const playRound = (sign, index) => {
-    board.update(sign, index);
-    checkWinner();
-    currentPlayer = currentPlayer === players[0] ? players[1] : players[0];
-  };
-
-  // Check every cell of a determined tris of the board
-  // Returns true if all 3 are equal and !null or false if not
+  // The parameters cells represents a combination on the board
+  // Returns true if the combination has equal simbols and is !null
   const checkCombination = (cells) => {
     return cells.every((cell) => cell !== null && cell === cells[0]);
   };
 
+  // Checks if the board has no more empty spaces
   const checkDraw = (board) => {
     return Object.values(board)
       .flat()
@@ -62,30 +55,34 @@ const gameController = (function () {
   };
 
   // Finds if a tris has been made in all the possible board combinations
-  // Choose the winner based on the tris sign
-  const checkWinner = () => {
-    const currentBoard = board.status();
-
+  // I need the win combo to mark the corresponding cells in the dom
+  const checkWinner = (currentBoard) => {
     // Main and Secondary diagonal
     let diagonal1 = [currentBoard[0][0], currentBoard[1][1], currentBoard[2][2]];
     let diagonal2 = [currentBoard[0][2], currentBoard[1][1], currentBoard[2][0]];
+
     if (checkCombination(diagonal1)) {
-      gameEnd = true;
+      winCombo = ["00", "11", "22"];
     }
     if (checkCombination(diagonal2)) {
-      gameEnd = true;
+      winCombo = ["02", "11", "20"];
     }
 
     // Rows and Columns
     for (let i = 0; i < 3; i++) {
       let row = currentBoard[i];
       let col = [currentBoard[0][i], currentBoard[1][i], currentBoard[2][i]];
+
       if (checkCombination(row)) {
-        gameEnd = true;
+        winCombo = [`${i}0`, `${i}1`, `${i}2`];
       }
       if (checkCombination(col)) {
-        gameEnd = true;
+        winCombo = [`0${i}`, `1${i}`, `2${i}`];
       }
+    }
+
+    if (winCombo) {
+      gameEnd = true;
     }
     if (checkDraw(currentBoard)) {
       draw = true;
@@ -94,28 +91,24 @@ const gameController = (function () {
 
   const isGameOver = () => gameEnd;
   const isDraw = () => draw;
-  const getCurrentPlayer = () => currentPlayer;
+  const getWinCombo = () => winCombo;
 
-  const newGame = () => {
-    board.clear();
+  const reset = () => {
+    winCombo = "";
     gameEnd = false;
     draw = false;
-    currentPlayer = players[0];
   };
 
-  return { playRound, getCurrentPlayer, isGameOver, isDraw, newGame };
+  return { getWinCombo, checkWinner, isGameOver, isDraw, reset };
 })();
 
-// The gameUI factory only manages the display of the game on the web page
-// The actual gameplay and controls are done in the gameBoard and gameController factory
-const gameUI = (function (doc) {
-  const controller = gameController;
+// The controllerDOM factory manages the display of the game on the web page
+const controllerDOM = (function (doc) {
   const boardContainer = doc.querySelector(".board-container");
   const dialog = doc.querySelector(".win-popup");
   const winnerParagraph = doc.querySelector(".winner-message");
-  const Reset = doc.querySelector(".new-game");
+  const resetBtn = doc.querySelector(".reset");
   // The indexes of the cells in the page match the indexes of the board
-  // So when i click a cell i know in what position it is
   const index = ["00", "01", "02", "10", "11", "12", "20", "21", "22"];
 
   const createBoard = () => {
@@ -126,47 +119,102 @@ const gameUI = (function (doc) {
     }
   };
 
-  // Based on the cells that are clicked the gameBoard is updated and gameController searches for any winning combinations
-  // When a combination is found a modal is displayed with the name of the winner, when closed it will reset the game
-  const playGame = () => {
-    // initial board
-    createBoard();
+  // Update the grid with the current player sign
+  const update = (click, player) => {
+    const cell = click.target.closest(".cell");
 
-    boardContainer.addEventListener("click", (event) => {
-      const cell = event.target.closest(".cell");
-      const currentPlayer = controller.getCurrentPlayer();
+    if (cell && !cell.textContent) {
+      cell.textContent = player.sign;
+    }
+  };
 
-      if (cell && !cell.textContent) {
-        const cellIndex = cell.classList[1];
-        cell.textContent = currentPlayer.sign;
-        controller.playRound(currentPlayer.sign, cellIndex);
-        console.table(gameBoard.status());
-      }
+  // Check if any of the index contained in the combo array match the index class of the cells
+  // When one is found set the background color of the cell
+  const markWinCombo = (combo) => {
+    const cells = boardContainer.querySelectorAll(".cell");
 
-      // Checks if the game has finished
-      if (controller.isGameOver()) {
-        dialog.showModal();
-        winnerParagraph.textContent = `${currentPlayer.name} Wins!`;
-      }
-
-      // Checks if all the cells have been filled but no tris has been made
-      if (controller.isDraw() && !controller.isGameOver()) {
-        dialog.showModal();
-        winnerParagraph.textContent = "It's a draw";
+    cells.forEach((cell) => {
+      const correspondingCell = combo.some((cls) => cell.classList.contains(cls));
+      if (correspondingCell) {
+        cell.style.backgroundColor = "#34C3BE";
       }
     });
+  };
 
-    // deletes the old board and create a new one, also reset the Board object
-    Reset.addEventListener("click", () => {
-      dialog.close();
-      boardContainer.innerHTML = "";
-      createBoard();
-      controller.newGame();
+  const EndGameMessage = (gameOver, draw, player) => {
+    if (gameOver) {
+      dialog.showModal();
+      winnerParagraph.textContent = `${player.name} Wins!`;
+    }
+
+    // Checks if all the cells have been filled but no tris has been made
+    if (draw && !gameOver) {
+      dialog.showModal();
+      winnerParagraph.textContent = "It's a tie!";
+    }
+  };
+
+  const reset = () => {
+    dialog.close();
+    boardContainer.innerHTML = "";
+    createBoard();
+  };
+
+  return { createBoard, update, markWinCombo, EndGameMessage, reset, boardContainer, resetBtn };
+})(document);
+
+// The game facory is where the game runs
+// it uses all the other factories to manage the dom, control and update of the board
+const game = (function () {
+  const board = gameBoard;
+  const controller = gameController;
+  const DOM = controllerDOM;
+  const players = [player("player 1", "X"), player("player 2", "O")];
+  let currentPlayer = players[0];
+
+  const changePlayer = () => {
+    currentPlayer = currentPlayer === players[0] ? players[1] : players[0];
+  };
+
+  const playRound = (event) => {
+    const cellIndex = event.target.closest(".cell").classList[1];
+
+    DOM.update(event, currentPlayer);
+    board.update(currentPlayer.sign, cellIndex);
+
+    const currentBoard = board.status();
+    controller.checkWinner(currentBoard);
+
+    if (controller.isGameOver()) {
+      DOM.markWinCombo(controller.getWinCombo());
+      DOM.EndGameMessage(true, false, currentPlayer);
+    } else if (controller.isDraw()) {
+      DOM.EndGameMessage(false, true, currentPlayer);
+    } else {
+      changePlayer();
+    }
+  };
+
+  const playGame = () => {
+    DOM.createBoard();
+
+    DOM.boardContainer.addEventListener("click", playRound);
+
+    DOM.resetBtn.addEventListener("click", () => {
+      DOM.reset();
+      controller.reset();
+      board.clear();
+      currentPlayer = players[0];
     });
   };
 
   return { playGame };
-})(document);
+})();
 
-const interface = gameUI;
-interface.playGame();
+game.playGame();
+
+// TODO: aggiungere logica per selezione giocatore e bot
+// TODO: aggiungere funzione per analizzare mosse giocate con tasto avanti e indietro quando il gioco e finito
+// TODO: scelta bot in base alle caselle libere algoritmo minmax
+// TODO: aggiungere scelta giocatore UI
+// TODO: stile css
