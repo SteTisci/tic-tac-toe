@@ -3,10 +3,10 @@ const player = (name, sign) => {
   return { name, sign };
 };
 
-// The Gameboard factory represents the state of the board
-// Manages the reset, addition and the current stautus of the board
+// The gameBoard factory represents a hidden board that is updated in parallel with the board of the DOM
+// All controls are performed on this board, so the game is not dependent on DOM manipulation
 const gameBoard = (function () {
-  // The board is an object that simulate a 2D 3x3 array, every cell is initialized with null
+  // The board is an object that simulate a 2D 3x3 array
   const board = {
     0: [null, null, null],
     1: [null, null, null],
@@ -34,8 +34,7 @@ const gameBoard = (function () {
   return { clear, update, status };
 })();
 
-// The gameController factory represent the state of the game
-// Takes care of updating, resetting and finding any winning combinations in the board
+// The gameController factory is where all game-related controls are performed
 const gameController = (function () {
   let winCombo = "";
   let gameEnd = false;
@@ -89,15 +88,15 @@ const gameController = (function () {
     }
   };
 
-  const isGameOver = () => gameEnd;
-  const isDraw = () => draw;
-  const getWinCombo = () => winCombo;
-
   const reset = () => {
     winCombo = "";
     gameEnd = false;
     draw = false;
   };
+
+  const isGameOver = () => gameEnd;
+  const isDraw = () => draw;
+  const getWinCombo = () => winCombo;
 
   return { getWinCombo, checkWinner, isGameOver, isDraw, reset };
 })();
@@ -119,7 +118,6 @@ const controllerDOM = (function (doc) {
     }
   };
 
-  // Update the grid with the current player sign
   const update = (click, player) => {
     const cell = click.target.closest(".cell");
 
@@ -141,17 +139,14 @@ const controllerDOM = (function (doc) {
     });
   };
 
-  const EndGameMessage = (gameOver, draw, player) => {
-    if (gameOver) {
-      dialog.showModal();
-      winnerParagraph.textContent = `${player.name} Wins!`;
-    }
+  const winMessage = (player) => {
+    dialog.showModal();
+    winnerParagraph.textContent = `${player.name} Wins!`;
+  };
 
-    // Checks if all the cells have been filled but no tris has been made
-    if (draw && !gameOver) {
-      dialog.showModal();
-      winnerParagraph.textContent = "It's a tie!";
-    }
+  const drawMessage = () => {
+    dialog.showModal();
+    winnerParagraph.textContent = "It's a tie!";
   };
 
   const reset = () => {
@@ -160,26 +155,26 @@ const controllerDOM = (function (doc) {
     createBoard();
   };
 
-  return { createBoard, update, markWinCombo, EndGameMessage, reset, boardContainer, resetBtn };
+  return { createBoard, update, markWinCombo, winMessage, drawMessage, reset, boardContainer, resetBtn };
 })(document);
 
 // The game facory is where the game runs
-// it uses all the other factories to manage the dom, control and update of the board
+// Depends on the others facories to manage all the components of the game
 const game = (function () {
   const board = gameBoard;
   const controller = gameController;
   const DOM = controllerDOM;
-  const players = [player("player 1", "X"), player("player 2", "O")];
+  const players = [player("Player 1", "X"), player("Player 2", "O")];
   let currentPlayer = players[0];
 
   const changePlayer = () => {
     currentPlayer = currentPlayer === players[0] ? players[1] : players[0];
   };
 
-  const playRound = (event) => {
-    const cellIndex = event.target.closest(".cell").classList[1];
+  const playRound = (click) => {
+    const cellIndex = click.target.closest(".cell").classList[1];
 
-    DOM.update(event, currentPlayer);
+    DOM.update(click, currentPlayer);
     board.update(currentPlayer.sign, cellIndex);
 
     const currentBoard = board.status();
@@ -187,9 +182,9 @@ const game = (function () {
 
     if (controller.isGameOver()) {
       DOM.markWinCombo(controller.getWinCombo());
-      DOM.EndGameMessage(true, false, currentPlayer);
+      DOM.winMessage(currentPlayer);
     } else if (controller.isDraw()) {
-      DOM.EndGameMessage(false, true, currentPlayer);
+      DOM.drawMessage();
     } else {
       changePlayer();
     }
