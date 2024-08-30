@@ -1,19 +1,24 @@
 .board-container {
-    width: 302px;
-    height: 302px;
+    width: 316px;
+    height: 316px;
     display: grid;
     grid-template-columns: repeat(auto-fill, 100px);
     grid-auto-rows: 100px;
     grid-auto-flow: row;
-    gap: 1px 1px;
+    gap: 8px 8px;
 }
 
 .cell {
     display: flex;
-    border: 7px solid black;
     border-radius: 15px;
     font-size: 100px;
     font-weight: 1000;
     justify-content: center;
     align-items: center;
+    background-color: rgba(0, 0, 0, 20%);
+    cursor: pointer;
+}
+
+.cell:hover {
+    background-color: rgba(0, 0, 0, 10%);
 }
