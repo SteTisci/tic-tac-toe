@@ -1,8 +1,3 @@
-// get the name and the sign of a player and returns them wrapped in an object
-const player = (name, sign) => {
-  return { name, sign };
-};
-
 // The gameBoard factory represents a hidden board that is updated in parallel with the board of the DOM
 // All controls are performed on this board, so the game is not dependent on DOM manipulation
 const gameBoard = (function () {
@@ -104,8 +99,7 @@ const gameController = (function () {
 // The controllerDOM factory manages the display of the game on the web page
 const controllerDOM = (function (doc) {
   const boardContainer = doc.querySelector(".board-container");
-  const dialog = doc.querySelector(".win-popup");
-  const winnerParagraph = doc.querySelector(".winner-message");
+  const playerInfo = doc.querySelector(".player-text");
   const resetBtn = doc.querySelector(".reset");
   // The indexes of the cells in the page match the indexes of the board
   const index = ["00", "01", "02", "10", "11", "12", "20", "21", "22"];
@@ -113,26 +107,32 @@ const controllerDOM = (function (doc) {
   const createBoard = () => {
     for (let i = 0; i < 9; i++) {
       const cell = doc.createElement("div");
-      cell.setAttribute("class", `cell ${index[i]}`);
+      cell.setAttribute("class", "cell");
+      cell.setAttribute("data-index", `${index[i]}`);
       boardContainer.appendChild(cell);
     }
   };
 
-  const update = (click, player) => {
-    const cell = click.target.closest(".cell");
-
-    if (cell && !cell.textContent) {
-      cell.textContent = player.sign;
-    }
+  const update = (cell, player) => {
+    cell.textContent = player.sign;
   };
 
-  // Check if any of the index contained in the combo array match the index class of the cells
+  // Choose a random empty cell in the board
+  const chooseBotMove = () => {
+    const emptyCells = Array.from(doc.querySelectorAll(".cell")).filter((cell) => !cell.textContent);
+    const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+
+    return randomCell;
+  };
+
+  // Check if any of the index contained in the combo array match the index dataset of the cells
   // When one is found set the background color of the cell
   const markWinCombo = (combo) => {
     const cells = boardContainer.querySelectorAll(".cell");
 
     cells.forEach((cell) => {
-      const correspondingCell = combo.some((cls) => cell.classList.contains(cls));
+      const correspondingCell = combo.includes(cell.dataset.index);
+
       if (correspondingCell) {
         cell.style.backgroundColor = "#34C3BE";
       }
@@ -140,23 +140,57 @@ const controllerDOM = (function (doc) {
   };
 
   const winMessage = (player) => {
-    dialog.showModal();
-    winnerParagraph.textContent = `${player.name} Wins!`;
+    playerInfo.textContent = `${player.name} Wins!`;
+    resetBtn.style.display = "inline";
   };
 
   const drawMessage = () => {
-    dialog.showModal();
-    winnerParagraph.textContent = "It's a tie!";
+    playerInfo.textContent = "It's a tie!";
+    resetBtn.style.display = "inline";
   };
 
   const reset = () => {
-    dialog.close();
     boardContainer.innerHTML = "";
+    playerInfo.textContent = "";
     createBoard();
   };
 
-  return { createBoard, update, markWinCombo, winMessage, drawMessage, reset, boardContainer, resetBtn };
+  return {
+    createBoard,
+    update,
+    chooseBotMove,
+    markWinCombo,
+    winMessage,
+    drawMessage,
+    reset,
+    boardContainer,
+    resetBtn,
+  };
 })(document);
+
+const player = (name, sign, type) => {
+  return { name, sign, type };
+};
+
+const playerController = (player1, player2) => {
+  let currentPlayer = player1;
+
+  const changePlayer = () => {
+    currentPlayer = currentPlayer === player1 ? player2 : player1;
+  };
+
+  const setPlayerType = (player, choice) => {
+    player.type = choice === "human" ? "human" : "bot";
+  };
+
+  const resetCurrentPlayer = () => {
+    currentPlayer = player1;
+  };
+
+  const getCurrentPlayer = () => currentPlayer;
+
+  return { changePlayer, getCurrentPlayer, setPlayerType, resetCurrentPlayer };
+};
 
 // The game facory is where the game runs
 // Depends on the others facories to manage all the components of the game
@@ -164,51 +198,89 @@ const game = (function () {
   const board = gameBoard;
   const controller = gameController;
   const DOM = controllerDOM;
-  const players = [player("Player 1", "X"), player("Player 2", "O")];
-  let currentPlayer = players[0];
+  const players = playerController(player("Player 1", "X", "bot"), player("Player 2", "O", "human"));
 
-  const changePlayer = () => {
-    currentPlayer = currentPlayer === players[0] ? players[1] : players[0];
+  // FIXME: playRound e progettata basandosi sul click dell'utente, ma non per forza avviene un click
+  //        Cambiarla per fare in modo che si adatti alla logica sia del click che del bot
+
+  const playRound = (event) => {
+    let cell;
+    const currentPlayer = players.getCurrentPlayer();
+
+    // Check if the current player is a bot or a human and set the cell accordingly
+    if (currentPlayer.type === "bot") {
+      cell = DOM.chooseBotMove();
+    } else {
+      cell = event.target.closest(".cell");
+    }
+
+    if (cell && !cell.textContent) {
+      const cellIndex = cell.dataset.index;
+
+      DOM.update(cell, currentPlayer);
+      board.update(currentPlayer.sign, cellIndex);
+
+      const currentBoard = board.status();
+      controller.checkWinner(currentBoard);
+
+      if (controller.isGameOver()) {
+        DOM.markWinCombo(controller.getWinCombo());
+        DOM.winMessage(currentPlayer);
+      } else if (controller.isDraw()) {
+        DOM.drawMessage();
+      } else {
+        players.changePlayer();
+
+        // If the next player is a bot, make the bot play
+        if (players.getCurrentPlayer().type === "bot") {
+          playBotRound();
+        }
+      }
+    }
   };
 
-  const playRound = (click) => {
-    const cellIndex = click.target.closest(".cell").classList[1];
-
-    DOM.update(click, currentPlayer);
-    board.update(currentPlayer.sign, cellIndex);
-
-    const currentBoard = board.status();
-    controller.checkWinner(currentBoard);
-
-    if (controller.isGameOver()) {
-      DOM.markWinCombo(controller.getWinCombo());
-      DOM.winMessage(currentPlayer);
-    } else if (controller.isDraw()) {
-      DOM.drawMessage();
-    } else {
-      changePlayer();
-    }
+  // Simulates a slight delay in the bot's move
+  const playBotRound = () => {
+    setTimeout(() => playRound(), 500);
   };
 
   const playGame = () => {
     DOM.createBoard();
 
-    DOM.boardContainer.addEventListener("click", playRound);
+    // Always add the event listener for click on the board container
+    DOM.boardContainer.addEventListener("click", (event) => {
+      if (players.getCurrentPlayer().type === "human") {
+        playRound(event);
+      }
+    });
+
+    // Handle the bot's turn at the start of the game if player 1 is a bot
+    if (players.getCurrentPlayer().type === "bot") {
+      playBotRound();
+    }
 
     DOM.resetBtn.addEventListener("click", () => {
       DOM.reset();
       controller.reset();
       board.clear();
-      currentPlayer = players[0];
+      players.resetCurrentPlayer();
+
+      // If after reset it's the bot's turn, let the bot play first
+      if (players.getCurrentPlayer().type === "bot") {
+        playBotRound();
+      }
     });
   };
 
   return { playGame };
 })();
 
+// FIXME: playgame viene chiamato solo quando la pagina viene caricata, causando problemi di gestione dei round sopratutto quando e il bot a iniziare
+//        una possibile soluzione e chiamare playgame ogni volta che si inizia una nuova partita
 game.playGame();
 
 // TODO: aggiungere logica per selezione giocatore e bot
+// TODO: mostrare turno giocatore
 // TODO: aggiungere funzione per analizzare mosse giocate con tasto avanti e indietro quando il gioco e finito
 // TODO: scelta bot in base alle caselle libere algoritmo minmax
 // TODO: aggiungere scelta giocatore UI
