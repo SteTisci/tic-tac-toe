@@ -1,3 +1,7 @@
+body {
+    background-color: rgba(0, 0, 0, 60%);
+}
+
 .board-container {
     width: 316px;
     height: 316px;
@@ -15,10 +19,14 @@
     font-weight: 1000;
     justify-content: center;
     align-items: center;
-    background-color: rgba(0, 0, 0, 20%);
+    background-color: rgba(0, 0, 0, 40%);
     cursor: pointer;
 }
 
 .cell:hover {
     background-color: rgba(0, 0, 0, 10%);
+}
+
+.reset {
+    display: none;
 }
