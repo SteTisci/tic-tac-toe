@@ -1,165 +1,127 @@
-// The gameBoard factory represents a hidden board that is updated in parallel with the board of the DOM
-// All controls are performed on this board, so the game is not dependent on DOM manipulation
+// Factory function representing the game's underlying board logic, independent of the DOM
 const gameBoard = (function () {
-  // The board is an object that simulate a 2D 3x3 array
-  const board = {
-    0: [null, null, null],
-    1: [null, null, null],
-    2: [null, null, null],
-  };
+  let board = Array(9).fill(null);
 
+  // Resets the board to its initial state.
   const clear = () => {
-    for (let i = 0; i < 3; i++) {
-      board[i].splice(0, 3, null, null, null);
-    }
+    board = Array(9).fill(null);
   };
 
-  // The index contains a 2 digit string representing:
-  // 1 digit = row , 2 digit = column
-  // example: index = "10" --> board[1][0]
+  // Updates the board with the player's sign at the specified index
   const update = (sign, index) => {
-    const [row, col] = index.split("");
-    if (board[row][col] === null) {
-      board[row].splice(col, 1, sign);
-    }
+    board[index] = sign;
   };
 
-  const status = () => board;
+  // Returns a copy of the current board state
+  const status = () => board.slice();
 
   return { clear, update, status };
 })();
 
-// The gameController factory is where all game-related controls are performed
+// Manages the game's core logic, including win and draw detection
 const gameController = (function () {
-  let winCombo = "";
-  let gameEnd = false;
+  let gameOver = false;
   let draw = false;
 
-  // The parameters cells represents a combination on the board
-  // Returns true if the combination has equal simbols and is !null
-  const checkCombination = (cells) => {
-    return cells.every((cell) => cell !== null && cell === cells[0]);
-  };
-
-  // Checks if the board has no more empty spaces
-  const checkDraw = (board) => {
-    return Object.values(board)
-      .flat()
-      .every((cell) => cell !== null);
-  };
-
-  // Finds if a tris has been made in all the possible board combinations
-  // I need the win combo to mark the corresponding cells in the dom
+  // Checks if there's a winning combination on the current board or if the board is full, indicating a draw
   const checkWinner = (currentBoard) => {
-    // Main and Secondary diagonal
-    let diagonal1 = [currentBoard[0][0], currentBoard[1][1], currentBoard[2][2]];
-    let diagonal2 = [currentBoard[0][2], currentBoard[1][1], currentBoard[2][0]];
+    const winningCombination = [
+      ["0", "1", "2"],
+      ["3", "4", "5"],
+      ["6", "7", "8"],
+      ["0", "3", "6"],
+      ["1", "4", "7"],
+      ["2", "5", "8"],
+      ["0", "4", "8"],
+      ["2", "4", "6"],
+    ];
 
-    if (checkCombination(diagonal1)) {
-      winCombo = ["00", "11", "22"];
-    }
-    if (checkCombination(diagonal2)) {
-      winCombo = ["02", "11", "20"];
-    }
-
-    // Rows and Columns
-    for (let i = 0; i < 3; i++) {
-      let row = currentBoard[i];
-      let col = [currentBoard[0][i], currentBoard[1][i], currentBoard[2][i]];
-
-      if (checkCombination(row)) {
-        winCombo = [`${i}0`, `${i}1`, `${i}2`];
-      }
-      if (checkCombination(col)) {
-        winCombo = [`0${i}`, `1${i}`, `2${i}`];
+    for (let combo of winningCombination) {
+      const [a, b, c] = combo;
+      if (currentBoard[a] !== null && currentBoard[a] === currentBoard[b] && currentBoard[a] === currentBoard[c]) {
+        gameOver = true;
+        return combo;
       }
     }
-
-    if (winCombo) {
-      gameEnd = true;
-    }
-    if (checkDraw(currentBoard)) {
+    if (currentBoard.every((cell) => cell !== null)) {
       draw = true;
     }
+
+    return null;
   };
 
-  const reset = () => {
-    winCombo = "";
-    gameEnd = false;
+  // Resets the game state flags
+  const resetGameState = () => {
+    gameOver = false;
     draw = false;
   };
 
-  const isGameOver = () => gameEnd;
+  const isGameOver = () => gameOver;
   const isDraw = () => draw;
-  const getWinCombo = () => winCombo;
 
-  return { getWinCombo, checkWinner, isGameOver, isDraw, reset };
+  return { checkWinner, isGameOver, isDraw, resetGameState };
 })();
 
-// The controllerDOM factory manages the display of the game on the web page
-const controllerDOM = (function (doc) {
+// Manages the game's UI interactions and visual updates
+const DOMController = (function (doc) {
   const boardContainer = doc.querySelector(".board-container");
   const playerInfo = doc.querySelector(".player-text");
   const resetBtn = doc.querySelector(".reset");
-  // The indexes of the cells in the page match the indexes of the board
-  const index = ["00", "01", "02", "10", "11", "12", "20", "21", "22"];
 
+  // Creates the visual representation of the game board
   const createBoard = () => {
     for (let i = 0; i < 9; i++) {
       const cell = doc.createElement("div");
       cell.setAttribute("class", "cell");
-      cell.setAttribute("data-index", `${index[i]}`);
+      cell.setAttribute("data-index", i);
       boardContainer.appendChild(cell);
     }
   };
 
+  // Updates a cell's content based on the player's move
   const update = (cell, player) => {
     cell.textContent = player.sign;
   };
 
-  // Choose a random empty cell in the board
+  // Chooses a random empty cell for the bot's move
   const chooseBotMove = () => {
     const emptyCells = Array.from(doc.querySelectorAll(".cell")).filter((cell) => !cell.textContent);
-    const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-
-    return randomCell;
+    return emptyCells[Math.floor(Math.random() * emptyCells.length)];
   };
 
-  // Check if any of the index contained in the combo array match the index dataset of the cells
-  // When one is found set the background color of the cell
-  const markWinCombo = (combo) => {
+  // Highlights the winning combination on the board
+  const highlightWinCombo = (combo) => {
     const cells = boardContainer.querySelectorAll(".cell");
-
     cells.forEach((cell) => {
-      const correspondingCell = combo.includes(cell.dataset.index);
-
-      if (correspondingCell) {
+      if (combo.includes(cell.dataset.index)) {
         cell.style.backgroundColor = "#34C3BE";
       }
     });
   };
 
+  // Displays the win message for the winning player
   const winMessage = (player) => {
     playerInfo.textContent = `${player.name} Wins!`;
     resetBtn.style.display = "inline";
   };
 
+  // Displays a draw message when the game ends in a tie
   const drawMessage = () => {
     playerInfo.textContent = "It's a tie!";
     resetBtn.style.display = "inline";
   };
 
+  // Resets the board's visual state
   const reset = () => {
     boardContainer.innerHTML = "";
     playerInfo.textContent = "";
-    createBoard();
   };
 
   return {
     createBoard,
     update,
     chooseBotMove,
-    markWinCombo,
+    highlightWinCombo,
     winMessage,
     drawMessage,
     reset,
@@ -168,120 +130,112 @@ const controllerDOM = (function (doc) {
   };
 })(document);
 
+// Factory function to create players with name, sign, and type
 const player = (name, sign, type) => {
   return { name, sign, type };
 };
 
+// Manages player turns and state
 const playerController = (player1, player2) => {
   let currentPlayer = player1;
 
+  // Switches to the other player
   const changePlayer = () => {
     currentPlayer = currentPlayer === player1 ? player2 : player1;
   };
 
-  const setPlayerType = (player, choice) => {
-    player.type = choice === "human" ? "human" : "bot";
-  };
-
+  // Resets to the first player
   const resetCurrentPlayer = () => {
     currentPlayer = player1;
   };
 
   const getCurrentPlayer = () => currentPlayer;
 
-  return { changePlayer, getCurrentPlayer, setPlayerType, resetCurrentPlayer };
+  return { player1, player2, changePlayer, getCurrentPlayer, resetCurrentPlayer };
 };
 
-// The game facory is where the game runs
-// Depends on the others facories to manage all the components of the game
+// Main game factory to manage the overall game flow
 const game = (function () {
   const board = gameBoard;
   const controller = gameController;
-  const DOM = controllerDOM;
-  const players = playerController(player("Player 1", "X", "bot"), player("Player 2", "O", "human"));
+  const DOM = DOMController;
+  const players = playerController(player("Player 1", "X", "bot"), player("Player 2", "O", "player"));
 
-  // FIXME: playRound e progettata basandosi sul click dell'utente, ma non per forza avviene un click
-  //        Cambiarla per fare in modo che si adatti alla logica sia del click che del bot
+  // Handles a player's move, updating both the game state and UI
+  const handlePlayerMove = (event) => {
+    const selectedCell = event.target.closest(".cell");
+    if (selectedCell && !selectedCell.textContent) {
+      playRound(selectedCell);
+    }
+  };
 
-  const playRound = (event) => {
-    let cell;
+  // Handles the bot's move with a slight delay
+  const handleBotMove = () => {
     const currentPlayer = players.getCurrentPlayer();
-
-    // Check if the current player is a bot or a human and set the cell accordingly
     if (currentPlayer.type === "bot") {
-      cell = DOM.chooseBotMove();
+      setTimeout(() => {
+        const selectedCell = DOM.chooseBotMove();
+        playRound(selectedCell);
+      }, 500);
+    }
+  };
+
+  // Toggles clickability of the board based on game state
+  const toggleBoardClick = () => {
+    if (controller.isGameOver() || controller.isDraw()) {
+      DOM.boardContainer.removeEventListener("click", handlePlayerMove);
     } else {
-      cell = event.target.closest(".cell");
-    }
-
-    if (cell && !cell.textContent) {
-      const cellIndex = cell.dataset.index;
-
-      DOM.update(cell, currentPlayer);
-      board.update(currentPlayer.sign, cellIndex);
-
-      const currentBoard = board.status();
-      controller.checkWinner(currentBoard);
-
-      if (controller.isGameOver()) {
-        DOM.markWinCombo(controller.getWinCombo());
-        DOM.winMessage(currentPlayer);
-      } else if (controller.isDraw()) {
-        DOM.drawMessage();
-      } else {
-        players.changePlayer();
-
-        // If the next player is a bot, make the bot play
-        if (players.getCurrentPlayer().type === "bot") {
-          playBotRound();
-        }
-      }
+      DOM.boardContainer.addEventListener("click", handlePlayerMove);
     }
   };
 
-  // Simulates a slight delay in the bot's move
-  const playBotRound = () => {
-    setTimeout(() => playRound(), 500);
+  // Executes a round of the game, handling player actions and checking game status
+  const playRound = (selectedCell) => {
+    const currentPlayer = players.getCurrentPlayer();
+    const cellIndex = selectedCell.dataset.index;
+
+    board.update(currentPlayer.sign, cellIndex);
+    DOM.update(selectedCell, currentPlayer);
+
+    const combo = controller.checkWinner(board.status());
+
+    if (controller.isGameOver()) {
+      DOM.highlightWinCombo(combo);
+      DOM.winMessage(currentPlayer);
+    } else if (controller.isDraw()) {
+      DOM.drawMessage();
+    } else {
+      players.changePlayer();
+      handleBotMove();
+    }
+    toggleBoardClick();
   };
 
-  const playGame = () => {
+  // Starts a new game, resetting all relevant components
+  const newGame = () => {
+    DOM.resetBtn.disabled = true;
+    DOM.reset();
+    board.clear();
+    players.resetCurrentPlayer();
+    controller.resetGameState();
     DOM.createBoard();
+    handleBotMove();
 
-    // Always add the event listener for click on the board container
-    DOM.boardContainer.addEventListener("click", (event) => {
-      if (players.getCurrentPlayer().type === "human") {
-        playRound(event);
-      }
-    });
-
-    // Handle the bot's turn at the start of the game if player 1 is a bot
-    if (players.getCurrentPlayer().type === "bot") {
-      playBotRound();
-    }
-
-    DOM.resetBtn.addEventListener("click", () => {
-      DOM.reset();
-      controller.reset();
-      board.clear();
-      players.resetCurrentPlayer();
-
-      // If after reset it's the bot's turn, let the bot play first
-      if (players.getCurrentPlayer().type === "bot") {
-        playBotRound();
-      }
-    });
+    // Leave the time for the bot to make a move
+    setTimeout(() => {
+      DOM.resetBtn.disabled = false;
+    }, 600);
   };
 
-  return { playGame };
+  // Initializes the game setup on DOM load
+  document.addEventListener("DOMContentLoaded", () => {
+    DOM.createBoard();
+    toggleBoardClick();
+    handleBotMove();
+  });
+
+  DOM.boardContainer.addEventListener("click", handlePlayerMove);
+  DOM.resetBtn.addEventListener("click", newGame);
+
+  return { newGame };
 })();
-
-// FIXME: playgame viene chiamato solo quando la pagina viene caricata, causando problemi di gestione dei round sopratutto quando e il bot a iniziare
-//        una possibile soluzione e chiamare playgame ogni volta che si inizia una nuova partita
-game.playGame();
-
-// TODO: aggiungere logica per selezione giocatore e bot
-// TODO: mostrare turno giocatore
-// TODO: aggiungere funzione per analizzare mosse giocate con tasto avanti e indietro quando il gioco e finito
-// TODO: scelta bot in base alle caselle libere algoritmo minmax
-// TODO: aggiungere scelta giocatore UI
-// TODO: stile css
