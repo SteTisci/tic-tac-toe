@@ -2,17 +2,17 @@
 const gameBoard = (function () {
   let board = Array(9).fill(null);
 
-  // Resets the board to its initial state.
+  // Resets the board to its initial state (empty cells)
   const clear = () => {
     board = Array(9).fill(null);
   };
 
-  // Updates the board with the player's sign at the specified index
+  // Updates the board with the player's sign (X or O) at the specified index
   const update = (sign, index) => {
     board[index] = sign;
   };
 
-  // Returns a copy of the current board state
+  // Returns a copy of the current board state to avoid direct mutation
   const status = () => board.slice();
 
   return { clear, update, status };
@@ -23,19 +23,20 @@ const gameController = (function () {
   let gameOver = false;
   let draw = false;
 
-  // Checks if there's a winning combination on the current board or if the board is full, indicating a draw
+  // Checks for a winning combination or determines if the game ends in a draw
   const checkWinner = (currentBoard) => {
     const winningCombination = [
-      ["0", "1", "2"],
-      ["3", "4", "5"],
-      ["6", "7", "8"],
-      ["0", "3", "6"],
-      ["1", "4", "7"],
-      ["2", "5", "8"],
-      ["0", "4", "8"],
-      ["2", "4", "6"],
+      ["0", "1", "2"], // Top row
+      ["3", "4", "5"], // Middle row
+      ["6", "7", "8"], // Bottom row
+      ["0", "3", "6"], // Left column
+      ["1", "4", "7"], // Middle column
+      ["2", "5", "8"], // Right column
+      ["0", "4", "8"], // Diagonal top-left to bottom-right
+      ["2", "4", "6"], // Diagonal top-right to bottom-left
     ];
 
+    // Check each winning combination to see if any player has won
     for (let combo of winningCombination) {
       const [a, b, c] = combo;
       if (currentBoard[a] !== null && currentBoard[a] === currentBoard[b] && currentBoard[a] === currentBoard[c]) {
@@ -43,6 +44,8 @@ const gameController = (function () {
         return combo;
       }
     }
+
+    // If no winner and all cells are filled, declare a draw
     if (currentBoard.every((cell) => cell !== null)) {
       draw = true;
     }
@@ -50,7 +53,7 @@ const gameController = (function () {
     return null;
   };
 
-  // Resets the game state flags
+  // Resets the game state for a new game
   const resetGameState = () => {
     gameOver = false;
     draw = false;
@@ -64,12 +67,15 @@ const gameController = (function () {
 
 // Manages the game's UI interactions and visual updates
 const DOMController = (function (doc) {
+  const gameSettings = doc.querySelector(".settings-dialog");
+  const startBtn = doc.querySelector(".start-game");
   const boardContainer = doc.querySelector(".board-container");
   const playerInfo = doc.querySelector(".player-text");
   const resetBtn = doc.querySelector(".reset");
 
   // Creates the visual representation of the game board
   const createBoard = () => {
+    boardContainer.innerHTML = ""; // Clear previous board if any
     for (let i = 0; i < 9; i++) {
       const cell = doc.createElement("div");
       cell.setAttribute("class", "cell");
@@ -78,47 +84,65 @@ const DOMController = (function (doc) {
     }
   };
 
-  // Updates a cell's content based on the player's move
+  // Manages dialog options (sign and game type selection)
+  const manageDialog = () => {
+    const signChoice = doc.querySelector(".p1-sign");
+    const signBtns = signChoice.querySelectorAll(".p1-sign button");
+    signChoice.addEventListener("click", (event) => toggleActiveButton(event, signBtns));
+
+    const gameType = doc.querySelector(".game-type");
+    const gameTypeBtns = gameType.querySelectorAll(".game-type button");
+    gameType.addEventListener("click", (event) => toggleActiveButton(event, gameTypeBtns));
+  };
+
+  // Toggles the active button for sign or game type selection
+  const toggleActiveButton = (click, buttons) => {
+    buttons.forEach((button) => button.classList.remove("active"));
+    click.target.classList.add("active");
+  };
+
+  // Updates a specific cell on the board with the current player's sign
   const update = (cell, player) => {
     cell.textContent = player.sign;
   };
 
-  // Chooses a random empty cell for the bot's move
+  // Randomly selects an empty cell for the bot's move
   const chooseBotMove = () => {
     const emptyCells = Array.from(doc.querySelectorAll(".cell")).filter((cell) => !cell.textContent);
     return emptyCells[Math.floor(Math.random() * emptyCells.length)];
   };
 
-  // Highlights the winning combination on the board
+  // Highlights the winning combination of cells when a player wins
   const highlightWinCombo = (combo) => {
     const cells = boardContainer.querySelectorAll(".cell");
     cells.forEach((cell) => {
       if (combo.includes(cell.dataset.index)) {
-        cell.style.backgroundColor = "#34C3BE";
+        cell.style.backgroundColor = "#34C3BE"; // Highlight winning cells
       }
     });
   };
 
-  // Displays the win message for the winning player
+  // Displays the win message for the current player
   const winMessage = (player) => {
     playerInfo.textContent = `${player.name} Wins!`;
-    resetBtn.style.display = "inline";
+    resetBtn.style.display = "inline"; // Show reset button
   };
 
-  // Displays a draw message when the game ends in a tie
+  // Displays a draw message if the game ends in a tie
   const drawMessage = () => {
     playerInfo.textContent = "It's a tie!";
-    resetBtn.style.display = "inline";
+    resetBtn.style.display = "inline"; // Show reset button
   };
 
   // Resets the board's visual state
   const reset = () => {
-    boardContainer.innerHTML = "";
-    playerInfo.textContent = "";
+    boardContainer.innerHTML = ""; // Clear the board visually
+    playerInfo.textContent = ""; // Clear player info message
   };
 
   return {
     createBoard,
+    manageDialog,
     update,
     chooseBotMove,
     highlightWinCombo,
@@ -126,32 +150,34 @@ const DOMController = (function (doc) {
     drawMessage,
     reset,
     boardContainer,
+    gameSettings,
     resetBtn,
+    startBtn,
   };
 })(document);
 
-// Factory function to create players with name, sign, and type
+// Factory function to create a player object
 const player = (name, sign, type) => {
   return { name, sign, type };
 };
 
-// Manages player turns and state
+// Manages player turns and current player state
 const playerController = (player1, player2) => {
   let currentPlayer = player1;
 
-  // Switches to the other player
+  // Switches to the next player after each turn
   const changePlayer = () => {
     currentPlayer = currentPlayer === player1 ? player2 : player1;
   };
 
-  // Resets to the first player
+  // Resets the game to start with the first player
   const resetCurrentPlayer = () => {
     currentPlayer = player1;
   };
 
   const getCurrentPlayer = () => currentPlayer;
 
-  return { player1, player2, changePlayer, getCurrentPlayer, resetCurrentPlayer };
+  return { changePlayer, getCurrentPlayer, resetCurrentPlayer };
 };
 
 // Main game factory to manage the overall game flow
@@ -159,9 +185,48 @@ const game = (function () {
   const board = gameBoard;
   const controller = gameController;
   const DOM = DOMController;
-  const players = playerController(player("Player 1", "X", "bot"), player("Player 2", "O", "player"));
+  let player1 = null;
+  let player2 = null;
+  let players;
 
-  // Handles a player's move, updating both the game state and UI
+  // Initializes players based on user input from the settings dialog
+  const initializePlayers = () => {
+    DOM.startBtn.addEventListener("click", () => {
+      const [sign, type] = setGameOptions();
+
+      // Create players based on sign and game type selection
+      if (sign.classList.contains("cross") && type.classList.contains("bot")) {
+        player1 = player("Player 1", "X", "human");
+        player2 = player("Player 2", "O", "bot");
+      } else if (sign.classList.contains("circle") && type.classList.contains("bot")) {
+        player1 = player("Player 1", "X", "bot");
+        player2 = player("Player 2", "O", "human");
+      } else if (type.classList.contains("players")) {
+        player1 = player("Player 1", "X", "human");
+        player2 = player("Player 2", "O", "human");
+      }
+
+      players = playerController(player1, player2);
+      DOM.gameSettings.close();
+      newGame();
+    });
+  };
+
+  // Retrieves user-selected options from the dialog
+  const setGameOptions = () => {
+    const choices = [];
+    const buttons = document.querySelectorAll(".p1-sign button, .game-type button");
+
+    Array.from(buttons).forEach((element) => {
+      if (element.classList.contains("active")) {
+        choices.push(element);
+      }
+    });
+
+    return choices;
+  };
+
+  // Handles a player's move when clicking on a cell
   const handlePlayerMove = (event) => {
     const selectedCell = event.target.closest(".cell");
     if (selectedCell && !selectedCell.textContent) {
@@ -169,7 +234,7 @@ const game = (function () {
     }
   };
 
-  // Handles the bot's move with a slight delay
+  // Handles the bot's move
   const handleBotMove = () => {
     const currentPlayer = players.getCurrentPlayer();
     if (currentPlayer.type === "bot") {
@@ -180,7 +245,7 @@ const game = (function () {
     }
   };
 
-  // Toggles clickability of the board based on game state
+  // Toggles the ability to click on the board depending on the game state
   const toggleBoardClick = () => {
     if (controller.isGameOver() || controller.isDraw()) {
       DOM.boardContainer.removeEventListener("click", handlePlayerMove);
@@ -189,7 +254,7 @@ const game = (function () {
     }
   };
 
-  // Executes a round of the game, handling player actions and checking game status
+  // Plays a round by updating the board, checking for a winner or draw, and switching players
   const playRound = (selectedCell) => {
     const currentPlayer = players.getCurrentPlayer();
     const cellIndex = selectedCell.dataset.index;
@@ -211,7 +276,7 @@ const game = (function () {
     toggleBoardClick();
   };
 
-  // Starts a new game, resetting all relevant components
+  // Starts a new game, resetting everything
   const newGame = () => {
     DOM.resetBtn.disabled = true;
     DOM.reset();
@@ -221,18 +286,21 @@ const game = (function () {
     DOM.createBoard();
     handleBotMove();
 
-    // Leave the time for the bot to make a move
     setTimeout(() => {
       DOM.resetBtn.disabled = false;
     }, 600);
   };
 
-  // Initializes the game setup on DOM load
+  // Initialize the game when the DOM is fully loaded
   document.addEventListener("DOMContentLoaded", () => {
     DOM.createBoard();
+    DOM.gameSettings.showModal();
+    DOM.manageDialog();
     toggleBoardClick();
     handleBotMove();
   });
+
+  initializePlayers();
 
   DOM.boardContainer.addEventListener("click", handlePlayerMove);
   DOM.resetBtn.addEventListener("click", newGame);
