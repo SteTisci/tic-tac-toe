@@ -5,23 +5,57 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script src="index.js" defer></script>
     <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="normalize.css" />
     <title>Tic Tac Toe</title>
   </head>
-  <body>
-    <h1>Tic Tac Toe</h1>
-    <p class="player-text"></p>
-    <dialog class="settings-dialog">
+  <body draggable="false">
+    <section class="game-initializer">
+      <h1 class="title">Tic Tac Toe</h1>
+      <p class="sign-text">Player 1's sign</p>
       <div class="p1-sign">
-        <button class="cross">X</button>
+        <button class="cross active">X</button>
         <button class="circle">O</button>
       </div>
       <div class="game-type">
-        <button class="bot">Vs Bot</button>
-        <button class="players">2 Players</button>
+        <button class="bot active"></button>
+        <button class="players"></button>
+      </div>
+      <div class="game-type-text">
+        <span class="vs-bot">VS Bot</span>
+        <span class="vs-player">VS Player</span>
       </div>
       <button class="start-game">Start Game</button>
-    </dialog>
-    <div class="board-container"></div>
-    <button class="reset">play again</button>
+    </section>
+
+    <main class="game" hidden="true">
+      <div class="info-container">
+        <button class="options">Options</button>
+        <span class="turn-text"></span>
+        <button class="new-game">New Game</button>
+      </div>
+      <div class="board-container"></div>
+      <div class="scoreboard">
+        <div class="player1">
+          <p>Player 1</p>
+          <p class="player1-score"></p>
+        </div>
+        <div class="draws">
+          <p>Draw</p>
+          <p class="players-draws"></p>
+        </div>
+        <div class="player2">
+          <p>Player 2</p>
+          <p class="player2-score"></p>
+        </div>
+      </div>
+      <button class="reset-score">Reset Score</button>
+    </main>
+
+    <footer class="author-info">
+      <p class="author-name">2024 SteTisci</p>
+      <a href="https://github.com/SteTisci">
+        <img src="images/github-logo.png" class="github-logo" alt="github logo" width="25px" height="auto" />
+      </a>
+    </footer>
   </body>
 </html>
