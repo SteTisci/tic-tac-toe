@@ -108,7 +108,7 @@ const DOMController = (function (doc) {
     }
   };
 
-  // Manages dialog options (sign and game type selection)
+  // Manages options (sign and game type selection)
   const manageGameSettings = () => {
     const signChoice = doc.querySelector(".p1-sign");
     const signBtns = signChoice.querySelectorAll(".p1-sign button");
@@ -228,7 +228,7 @@ const game = (function () {
   let player2 = null;
   let players;
 
-  // Initializes players based on user input from the settings dialog
+  // Initializes players based on user input from the options section
   const handleStartGame = () => {
     const [sign, type] = setGameOptions();
 
@@ -251,14 +251,12 @@ const game = (function () {
     newGame();
   };
 
-  DOM.startBtn.addEventListener("click", handleStartGame);
-
-  // Manage the game option from the dialog selection
-  const initializePlayers = () => {
+  // Set the players and the game settings
+  const initializaGame = () => {
     DOM.startBtn.addEventListener("click", handleStartGame);
   };
 
-  // Retrieves user-selected options from the dialog
+  // Retrieves user-selected options
   const setGameOptions = () => {
     const choices = [];
     const buttons = document.querySelectorAll(".p1-sign button, .game-type button");
@@ -342,18 +340,18 @@ const game = (function () {
     DOM.updateScoreboard(controller.getCurrentScore());
   });
 
-  initializePlayers();
+  initializaGame();
 
   DOM.boardContainer.addEventListener("click", handlePlayerMove);
 
-  // Open the dialog for game related options
+  // Hode the gameboard and show the game options
   DOM.optionBtn.addEventListener("click", () => {
     DOM.gameSettings.removeAttribute("hidden");
     DOM.mainGame.setAttribute("hidden", "true");
 
     // Prevent adding multiple event listener when the option button is clicked
     DOM.startBtn.removeEventListener("click", handleStartGame);
-    initializePlayers();
+    initializaGame();
   });
 
   DOM.resetBtn.addEventListener("click", newGame);
