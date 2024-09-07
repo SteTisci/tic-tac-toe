@@ -98,25 +98,25 @@ body {
 
 .game-type button.bot.active {
     background-color: var(--silver);
-    background-image: url('/images/bot-active.png');
+    background-image: url('images/bot-active.png');
     background-size: 150px;
 }
 
 .game-type button.bot:not(.active) {
-    background-image: url('/images/bot.png');
+    background-image: url('images/bot.png');
     background-size: 150px;
 }
 
 .game-type button.players.active {
     background-color: var(--silver);
-    background-image: url('/images/players-active.png');
+    background-image: url('images/players-active.png');
     background-size: 150px 150px;
     background-repeat: no-repeat;
     background-position-x: center;
 }
 
 .game-type button.players:not(.active) {
-    background-image: url('/images/players.png');
+    background-image: url('images/players.png');
     background-size: 150px 150px;
     background-repeat: no-repeat;
     background-position-x: center;
@@ -301,6 +301,7 @@ body {
 .reset-score:hover {
     background-color: var(--coral);
     color: var(--primary);
+    transition-duration: 0.4s;
 }
 
 .author-info {
