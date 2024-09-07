@@ -1,5 +1,213 @@
+:root {
+    --primary: #2D3142;
+    --secondary: #4F5D75;
+    --silver: #BFC0C0;
+    --coral: #EF8354;
+}
+
 body {
-    background-color: rgba(0, 0, 0, 60%);
+    background-color: var(--primary);
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    font-family: cursive;
+    width: 100%;
+    user-select: none;
+}
+
+.game-initializer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    height: 100vh;
+    width: 100vw;
+}
+
+.title {
+    font-size: 3.8rem;
+    font-weight: 600;
+    margin: 15px 0 110px;
+    color: var(--silver);
+}
+
+.sign-text {
+    font-size: 1.6rem;
+    font-weight: 600;
+    margin: 0;
+    padding: 15px;
+    color: var(--silver);
+}
+
+.p1-sign {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    width: 350px;
+    height: 70px;
+    border: 1px solid var(--primary);
+    border-radius: 15px;
+    padding: 10px;
+    margin-bottom: 60px;
+    background-color: var(--secondary);
+    box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+}
+
+.p1-sign button {
+    align-self: center;
+    width: 50%;
+    height: 100%;
+    border: none;
+    border-radius: 10px;
+    outline: none;
+    background-color: transparent;
+    font-size: 2.6rem;
+    font-weight: 600;
+    transition-duration: 0.4s;
+    color: var(--silver);
+    cursor: pointer;
+}
+
+.p1-sign button.active {
+    background-color: var(--silver);
+    color: var(--secondary);
+}
+
+.game-type {
+    width: 500px;
+    margin-top: 30px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    height: 150px;
+}
+
+.game-type button {
+    width: 150px;
+    height: 150px;
+    border: none;
+    border-radius: 10px;
+    background-color: #4F5D75;
+    padding: 0;
+    transition-duration: 0.4s;
+    box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+    cursor: pointer;
+}
+
+.game-type button.bot.active {
+    background-color: var(--silver);
+    background-image: url('/images/bot-active.png');
+    background-size: 150px;
+}
+
+.game-type button.bot:not(.active) {
+    background-image: url('/images/bot.png');
+    background-size: 150px;
+}
+
+.game-type button.players.active {
+    background-color: var(--silver);
+    background-image: url('/images/players-active.png');
+    background-size: 150px 150px;
+    background-repeat: no-repeat;
+    background-position-x: center;
+}
+
+.game-type button.players:not(.active) {
+    background-image: url('/images/players.png');
+    background-size: 150px 150px;
+    background-repeat: no-repeat;
+    background-position-x: center;
+}
+
+.game-type-text {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    width: 500px;
+    padding: 20px;
+}
+
+.game-type-text span {
+    font-weight: 600;
+    font-size: 1.2rem;
+    color: var(--silver);
+}
+
+.start-game {
+    margin-top: 40px;
+    padding: 20px 15px;
+    border: none;
+    border-radius: 10px;
+    outline: none;
+    background-color: var(--secondary);
+    color: var(--silver);
+    font-weight: 600;
+    font-size: 1.2rem;
+    box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+    cursor: pointer;
+}
+
+.start-game:hover {
+    background-color: var(--coral);
+    color: var(--primary);
+}
+
+.start-game:active {
+    background-color: var(--coral);
+    color: var(--primary);
+}
+
+.game {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.info-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    gap: 200px;
+    width: 1000px;
+    height: 80px;
+    margin: 40px 0 100px;
+    cursor: default;
+}
+
+.turn-text {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 80px;
+    width: 250px;
+    font-weight: 600;
+    font-size: 2rem;
+    margin: 0;
+    color: var(--silver);
+}
+
+.info-container button {
+    width: 130px;
+    height: 50px;
+    border: 1px solid var(--primary);
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 1.2rem;
+    background-color: var(--silver);
+    color: var(--secondary);
+    box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+    cursor: pointer;
+}
+
+.info-container button:hover {
+    background-color: var(--coral);
+    color: var(--primary);
+    transition-duration: 0.4s;
 }
 
 .board-container {
@@ -16,17 +224,98 @@ body {
     display: flex;
     border-radius: 15px;
     font-size: 100px;
-    font-weight: 1000;
+    font-weight: 600;
+    padding-bottom: 8px;
     justify-content: center;
     align-items: center;
-    background-color: rgba(0, 0, 0, 40%);
+    background-color: var(--secondary);
+    color: var(--silver);
+    border: 1px solid var(--primary);
+    box-shadow: rgba(0, 0, 0, 0.09) 0px 2px 1px, rgba(0, 0, 0, 0.09) 0px 4px 2px, rgba(0, 0, 0, 0.09) 0px 8px 4px, rgba(0, 0, 0, 0.09) 0px 16px 8px, rgba(0, 0, 0, 0.09) 0px 32px 16px;
     cursor: pointer;
 }
 
 .cell:hover {
-    background-color: rgba(0, 0, 0, 10%);
+    background-color: var(--coral);
+    transition-duration: 0.4s;
 }
 
-.reset {
-    display: none;
+.scoreboard  {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+    align-items: center;
+    margin: 100px 0 50px;
+    height: 100px;
+    width: 800px;
+}
+
+.scoreboard div {
+    display: flex;
+    flex-direction: column;
+    width: 200px;
+    height: 70%;
+    text-align: center;
+    justify-content: center;
+    border: 1px solid var(--primary);
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 1.3rem;
+    box-shadow: rgba(0, 0, 0, 0.09) 0px 2px 1px, rgba(0, 0, 0, 0.09) 0px 4px 2px, rgba(0, 0, 0, 0.09) 0px 8px 4px, rgba(0, 0, 0, 0.09) 0px 16px 8px, rgba(0, 0, 0, 0.09) 0px 32px 16px;
+}
+
+.scoreboard p {
+    margin: 0;
+}
+
+.player1-score,
+.player2-score,
+.players-draws {
+    padding-top: 8px;
+}
+
+.player1, 
+.player2 {
+    background-color: var(--coral);
+    color: var(--primary);
+}
+
+.draws {
+    background-color: var(--silver);
+    color: var(--primary);
+}
+
+.reset-score {
+    width: 130px;
+    height: 50px;
+    border: 1px solid var(--primary);
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 1.2rem;
+    background-color: var(--silver);
+    color: var(--secondary);
+    box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+    cursor: pointer;
+}
+
+.reset-score:hover {
+    background-color: var(--coral);
+    color: var(--primary);
+}
+
+.author-info {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    width: 100%;
+}
+
+.author-name {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--silver);
 }
