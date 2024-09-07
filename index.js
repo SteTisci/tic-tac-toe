@@ -23,6 +23,12 @@ const gameController = (function () {
   let gameOver = false;
   let draw = false;
 
+  const score = {
+    player1: 0,
+    draws: 0,
+    player2: 0,
+  };
+
   // Checks for a winning combination or determines if the game ends in a draw
   const checkWinner = (currentBoard) => {
     const winningCombination = [
@@ -41,6 +47,13 @@ const gameController = (function () {
       const [a, b, c] = combo;
       if (currentBoard[a] !== null && currentBoard[a] === currentBoard[b] && currentBoard[a] === currentBoard[c]) {
         gameOver = true;
+
+        if (currentBoard[a] === "X") {
+          score.player1++;
+        } else {
+          score.player2++;
+        }
+
         return combo;
       }
     }
@@ -48,6 +61,7 @@ const gameController = (function () {
     // If no winner and all cells are filled, declare a draw
     if (currentBoard.every((cell) => cell !== null)) {
       draw = true;
+      score.draws++;
     }
 
     return null;
@@ -59,19 +73,29 @@ const gameController = (function () {
     draw = false;
   };
 
+  const resetScore = () => {
+    score.player1 = 0;
+    score.draws = 0;
+    score.player2 = 0;
+  };
+
   const isGameOver = () => gameOver;
   const isDraw = () => draw;
+  const getCurrentScore = () => score;
 
-  return { checkWinner, isGameOver, isDraw, resetGameState };
+  return { checkWinner, isGameOver, isDraw, getCurrentScore, resetGameState, resetScore };
 })();
 
 // Manages the game's UI interactions and visual updates
 const DOMController = (function (doc) {
-  const gameSettings = doc.querySelector(".settings-dialog");
+  const gameSettings = doc.querySelector(".game-initializer");
   const startBtn = doc.querySelector(".start-game");
+  const mainGame = doc.querySelector(".game");
   const boardContainer = doc.querySelector(".board-container");
-  const playerInfo = doc.querySelector(".player-text");
-  const resetBtn = doc.querySelector(".reset");
+  const playerInfo = doc.querySelector(".turn-text");
+  const resetBtn = doc.querySelector(".new-game");
+  const optionBtn = doc.querySelector(".options");
+  const resetScoreBtn = doc.querySelector(".reset-score");
 
   // Creates the visual representation of the game board
   const createBoard = () => {
@@ -85,7 +109,7 @@ const DOMController = (function (doc) {
   };
 
   // Manages dialog options (sign and game type selection)
-  const manageDialog = () => {
+  const manageGameSettings = () => {
     const signChoice = doc.querySelector(".p1-sign");
     const signBtns = signChoice.querySelectorAll(".p1-sign button");
     signChoice.addEventListener("click", (event) => toggleActiveButton(event, signBtns));
@@ -98,7 +122,11 @@ const DOMController = (function (doc) {
   // Toggles the active button for sign or game type selection
   const toggleActiveButton = (click, buttons) => {
     buttons.forEach((button) => button.classList.remove("active"));
-    click.target.classList.add("active");
+    const clickedBtn = click.target.closest("button");
+
+    if (clickedBtn) {
+      clickedBtn.classList.add("active");
+    }
   };
 
   // Updates a specific cell on the board with the current player's sign
@@ -117,42 +145,53 @@ const DOMController = (function (doc) {
     const cells = boardContainer.querySelectorAll(".cell");
     cells.forEach((cell) => {
       if (combo.includes(cell.dataset.index)) {
-        cell.style.backgroundColor = "#34C3BE"; // Highlight winning cells
+        cell.style.backgroundColor = "#EF8354"; // Highlight winning cells
       }
     });
+  };
+
+  const updateScoreboard = (score) => {
+    doc.querySelector(".player1-score").textContent = `${score.player1}`;
+    doc.querySelector(".players-draws").textContent = `${score.draws}`;
+    doc.querySelector(".player2-score").textContent = `${score.player2}`;
   };
 
   // Displays the win message for the current player
   const winMessage = (player) => {
     playerInfo.textContent = `${player.name} Wins!`;
-    resetBtn.style.display = "inline"; // Show reset button
+    playerInfo.style.color = "#EF8354";
   };
 
-  // Displays a draw message if the game ends in a tie
+  // Displays a draw message if the game ends in a draw
   const drawMessage = () => {
-    playerInfo.textContent = "It's a tie!";
-    resetBtn.style.display = "inline"; // Show reset button
+    playerInfo.textContent = "It's a Draw!";
   };
 
   // Resets the board's visual state
   const reset = () => {
-    boardContainer.innerHTML = ""; // Clear the board visually
-    playerInfo.textContent = ""; // Clear player info message
+    boardContainer.innerHTML = "";
+    playerInfo.textContent = "";
+    playerInfo.style.color = "#BFC0C0";
   };
 
   return {
     createBoard,
-    manageDialog,
+    manageGameSettings,
     update,
     chooseBotMove,
     highlightWinCombo,
+    updateScoreboard,
     winMessage,
     drawMessage,
     reset,
+    mainGame,
     boardContainer,
     gameSettings,
+    playerInfo,
     resetBtn,
     startBtn,
+    optionBtn,
+    resetScoreBtn,
   };
 })(document);
 
@@ -190,26 +229,33 @@ const game = (function () {
   let players;
 
   // Initializes players based on user input from the settings dialog
+  const handleStartGame = () => {
+    const [sign, type] = setGameOptions();
+
+    if (!sign || !type) return;
+
+    if (sign.classList.contains("cross") && type.classList.contains("bot")) {
+      player1 = player("Player 1", "X", "human");
+      player2 = player("Player 2", "O", "bot");
+    } else if (sign.classList.contains("circle") && type.classList.contains("bot")) {
+      player1 = player("Player 1", "X", "bot");
+      player2 = player("Player 2", "O", "human");
+    } else if (type.classList.contains("players")) {
+      player1 = player("Player 1", "X", "human");
+      player2 = player("Player 2", "O", "human");
+    }
+
+    players = playerController(player1, player2);
+    DOM.gameSettings.setAttribute("hidden", "true");
+    DOM.mainGame.removeAttribute("hidden");
+    newGame();
+  };
+
+  DOM.startBtn.addEventListener("click", handleStartGame);
+
+  // Manage the game option from the dialog selection
   const initializePlayers = () => {
-    DOM.startBtn.addEventListener("click", () => {
-      const [sign, type] = setGameOptions();
-
-      // Create players based on sign and game type selection
-      if (sign.classList.contains("cross") && type.classList.contains("bot")) {
-        player1 = player("Player 1", "X", "human");
-        player2 = player("Player 2", "O", "bot");
-      } else if (sign.classList.contains("circle") && type.classList.contains("bot")) {
-        player1 = player("Player 1", "X", "bot");
-        player2 = player("Player 2", "O", "human");
-      } else if (type.classList.contains("players")) {
-        player1 = player("Player 1", "X", "human");
-        player2 = player("Player 2", "O", "human");
-      }
-
-      players = playerController(player1, player2);
-      DOM.gameSettings.close();
-      newGame();
-    });
+    DOM.startBtn.addEventListener("click", handleStartGame);
   };
 
   // Retrieves user-selected options from the dialog
@@ -228,7 +274,10 @@ const game = (function () {
 
   // Handles a player's move when clicking on a cell
   const handlePlayerMove = (event) => {
+    const currentPlayer = players.getCurrentPlayer();
     const selectedCell = event.target.closest(".cell");
+
+    DOM.playerInfo.textContent = `${currentPlayer.sign}'s turn`;
     if (selectedCell && !selectedCell.textContent) {
       playRound(selectedCell);
     }
@@ -237,6 +286,8 @@ const game = (function () {
   // Handles the bot's move
   const handleBotMove = () => {
     const currentPlayer = players.getCurrentPlayer();
+
+    DOM.playerInfo.textContent = `${currentPlayer.sign}'s turn`;
     if (currentPlayer.type === "bot") {
       setTimeout(() => {
         const selectedCell = DOM.chooseBotMove();
@@ -267,8 +318,10 @@ const game = (function () {
     if (controller.isGameOver()) {
       DOM.highlightWinCombo(combo);
       DOM.winMessage(currentPlayer);
+      DOM.updateScoreboard(controller.getCurrentScore());
     } else if (controller.isDraw()) {
       DOM.drawMessage();
+      DOM.updateScoreboard(controller.getCurrentScore());
     } else {
       players.changePlayer();
       handleBotMove();
@@ -284,6 +337,7 @@ const game = (function () {
     players.resetCurrentPlayer();
     controller.resetGameState();
     DOM.createBoard();
+    toggleBoardClick();
     handleBotMove();
 
     setTimeout(() => {
@@ -294,16 +348,26 @@ const game = (function () {
   // Initialize the game when the DOM is fully loaded
   document.addEventListener("DOMContentLoaded", () => {
     DOM.createBoard();
-    DOM.gameSettings.showModal();
-    DOM.manageDialog();
+    DOM.manageGameSettings();
     toggleBoardClick();
-    handleBotMove();
+    DOM.updateScoreboard(controller.getCurrentScore());
   });
 
   initializePlayers();
 
-  DOM.boardContainer.addEventListener("click", handlePlayerMove);
-  DOM.resetBtn.addEventListener("click", newGame);
+  // Open the dialog for game related options
+  DOM.optionBtn.addEventListener("click", () => {
+    DOM.gameSettings.removeAttribute("hidden");
+    DOM.mainGame.setAttribute("hidden", "true");
 
-  return { newGame };
+    // Prevent adding multiple event listener when the option button is clicked
+    DOM.startBtn.removeEventListener("click", handleStartGame);
+    initializePlayers();
+  });
+
+  DOM.resetBtn.addEventListener("click", newGame);
+  DOM.resetScoreBtn.addEventListener("click", () => {
+    controller.resetScore();
+    DOM.updateScoreboard(controller.getCurrentScore());
+  });
 })();
