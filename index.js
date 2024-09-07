@@ -274,6 +274,7 @@ const game = (function () {
 
   // Handles a player's move when clicking on a cell
   const handlePlayerMove = (event) => {
+    if (controller.isGameOver() || controller.isDraw()) return;
     const currentPlayer = players.getCurrentPlayer();
     const selectedCell = event.target.closest(".cell");
 
@@ -293,15 +294,6 @@ const game = (function () {
         const selectedCell = DOM.chooseBotMove();
         playRound(selectedCell);
       }, 500);
-    }
-  };
-
-  // Toggles the ability to click on the board depending on the game state
-  const toggleBoardClick = () => {
-    if (controller.isGameOver() || controller.isDraw()) {
-      DOM.boardContainer.removeEventListener("click", handlePlayerMove);
-    } else {
-      DOM.boardContainer.addEventListener("click", handlePlayerMove);
     }
   };
 
@@ -326,7 +318,6 @@ const game = (function () {
       players.changePlayer();
       handleBotMove();
     }
-    toggleBoardClick();
   };
 
   // Starts a new game, resetting everything
@@ -337,7 +328,6 @@ const game = (function () {
     players.resetCurrentPlayer();
     controller.resetGameState();
     DOM.createBoard();
-    toggleBoardClick();
     handleBotMove();
 
     setTimeout(() => {
@@ -349,11 +339,12 @@ const game = (function () {
   document.addEventListener("DOMContentLoaded", () => {
     DOM.createBoard();
     DOM.manageGameSettings();
-    toggleBoardClick();
     DOM.updateScoreboard(controller.getCurrentScore());
   });
 
   initializePlayers();
+
+  DOM.boardContainer.addEventListener("click", handlePlayerMove);
 
   // Open the dialog for game related options
   DOM.optionBtn.addEventListener("click", () => {
@@ -371,3 +362,5 @@ const game = (function () {
     DOM.updateScoreboard(controller.getCurrentScore());
   });
 })();
+
+// TODO: implementare algoritmo Minimax per difficolta bot
