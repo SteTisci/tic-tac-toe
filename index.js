@@ -121,12 +121,12 @@ const DOMController = (function (doc) {
 
   // Toggles the active button for sign or game type selection
   const toggleActiveButton = (click, buttons) => {
-    buttons.forEach((button) => button.classList.remove("active"));
     const clickedBtn = click.target.closest("button");
 
-    if (clickedBtn) {
-      clickedBtn.classList.add("active");
-    }
+    if (!clickedBtn) return;
+
+    buttons.forEach((button) => button.classList.remove("active"));
+    clickedBtn.classList.add("active");
   };
 
   // Updates a specific cell on the board with the current player's sign
@@ -229,8 +229,8 @@ const game = (function () {
   let players;
 
   // Initializes players based on user input from the options section
-  const handleStartGame = () => {
-    const [sign, type] = setGameOptions();
+  const initializeGame = () => {
+    const [sign, type] = getGameOptions();
 
     if (!sign || !type) return;
 
@@ -251,13 +251,8 @@ const game = (function () {
     newGame();
   };
 
-  // Set the players and the game settings
-  const initializaGame = () => {
-    DOM.startBtn.addEventListener("click", handleStartGame);
-  };
-
   // Retrieves user-selected options
-  const setGameOptions = () => {
+  const getGameOptions = () => {
     const choices = [];
     const buttons = document.querySelectorAll(".p1-sign button, .game-type button");
 
@@ -287,6 +282,8 @@ const game = (function () {
     const currentPlayer = players.getCurrentPlayer();
 
     DOM.playerInfo.textContent = `${currentPlayer.sign}'s turn`;
+
+    // Using setTimeout to simulate the bot's "thinking time"
     if (currentPlayer.type === "bot") {
       setTimeout(() => {
         const selectedCell = DOM.chooseBotMove();
@@ -328,33 +325,35 @@ const game = (function () {
     DOM.createBoard();
     handleBotMove();
 
+    // If the bot play's first and the reset button is clicked several times in less than 500ms, he will make more than one move
+    // The timeout will prevents it giving him time to make his move before reactivating the button
     setTimeout(() => {
       DOM.resetBtn.disabled = false;
     }, 600);
   };
 
-  // Initialize the game when the DOM is fully loaded
+  // Initialize the page when it's loaded
   document.addEventListener("DOMContentLoaded", () => {
     DOM.createBoard();
     DOM.manageGameSettings();
     DOM.updateScoreboard(controller.getCurrentScore());
   });
 
-  initializaGame();
+  // Initialize the game with the selected options
+  DOM.startBtn.addEventListener("click", initializeGame);
 
   DOM.boardContainer.addEventListener("click", handlePlayerMove);
 
-  // Hode the gameboard and show the game options
+  // Hide the gameboard and show the game options
   DOM.optionBtn.addEventListener("click", () => {
     DOM.gameSettings.removeAttribute("hidden");
     DOM.mainGame.setAttribute("hidden", "true");
-
-    // Prevent adding multiple event listener when the option button is clicked
-    DOM.startBtn.removeEventListener("click", handleStartGame);
-    initializaGame();
   });
 
+  // start a new game
   DOM.resetBtn.addEventListener("click", newGame);
+
+  // Reset the score
   DOM.resetScoreBtn.addEventListener("click", () => {
     controller.resetScore();
     DOM.updateScoreboard(controller.getCurrentScore());
