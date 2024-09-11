@@ -27,13 +27,7 @@
       <button class="start-game">Start Game</button>
     </section>
 
-    <main class="game" hidden="true">
-      <div class="info-container">
-        <button class="options">Options</button>
-        <span class="turn-text"></span>
-        <button class="new-game">New Game</button>
-      </div>
-      <div class="board-container"></div>
+    <main class="game hidden">
       <div class="scoreboard">
         <div class="player1">
           <p>Player 1</p>
@@ -48,7 +42,13 @@
           <p class="player2-score"></p>
         </div>
       </div>
-      <button class="reset-score">Reset Score</button>
+      <h2 class="turn-text"></h2>
+      <div class="board-container"></div>
+      <div class="buttons-container">
+        <button class="options">Options</button>
+        <button class="new-game">New Game</button>
+        <button class="reset-score">Reset Score</button>
+      </div>
     </main>
 
     <footer class="author-info">
