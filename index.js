@@ -101,7 +101,7 @@ const DOMController = (function (doc) {
   const createBoard = () => {
     boardContainer.innerHTML = ""; // Clear previous board if any
     for (let i = 0; i < 9; i++) {
-      const cell = doc.createElement("div");
+      const cell = doc.createElement("button");
       cell.setAttribute("class", "cell");
       cell.setAttribute("data-index", i);
       boardContainer.appendChild(cell);
@@ -246,8 +246,8 @@ const game = (function () {
     }
 
     players = playerController(player1, player2);
-    DOM.gameSettings.setAttribute("hidden", "true");
-    DOM.mainGame.removeAttribute("hidden");
+    DOM.gameSettings.classList.add("hidden");
+    DOM.mainGame.classList.remove("hidden");
     newGame();
   };
 
@@ -346,8 +346,8 @@ const game = (function () {
 
   // Hide the gameboard and show the game options
   DOM.optionBtn.addEventListener("click", () => {
-    DOM.gameSettings.removeAttribute("hidden");
-    DOM.mainGame.setAttribute("hidden", "true");
+    DOM.gameSettings.classList.remove("hidden");
+    DOM.mainGame.classList.add("hidden");
   });
 
   // start a new game
