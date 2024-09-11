@@ -24,7 +24,7 @@ body {
 
 .title {
     font-size: 3.5rem;
-    margin: 5px auto 120px;
+    margin: 20px 0 5%;
     color: var(--silver);
 }
 
@@ -43,7 +43,7 @@ body {
     border-radius: 15px;
     padding: 10px;
     background-color: var(--secondary);
-    margin-bottom: 80px;
+    margin-bottom: 5%;
     box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
 }
 
@@ -111,7 +111,7 @@ body {
     justify-content: center;
     width: 500px;
     gap: 100px;
-    margin: 10px 0 70px;
+    margin: 10px 0 5%;
 }
 
 .vs-bot,
@@ -160,7 +160,7 @@ body {
     flex-direction: row;
     align-items: center;
     justify-content: space-evenly;
-    margin: 40px 0 80px;
+    margin: 40px 0 5%;
     width: 50%;
 }
 
@@ -193,8 +193,8 @@ body {
 }
 
 .turn-text {
-    font-size: 2rem;
-    margin-bottom: 40px;
+    font-size: 2.2rem;
+    margin-bottom: 20px;
 }
 
 .board-container {
@@ -227,7 +227,7 @@ body {
     display: flex;
     justify-content: space-evenly;
     width: 30%;
-    margin: 150px 0 0;
+    margin: 5% 0 0;
 }
 
 .buttons-container button {
