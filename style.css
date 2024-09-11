@@ -26,7 +26,7 @@ body {
 
 .title {
     font-size: 3.5rem;
-    margin: 5px auto 120px;
+    margin: 5px auto 8%;
     color: var(--silver);
 }
 
@@ -45,7 +45,7 @@ body {
     border-radius: 15px;
     padding: 10px;
     background-color: var(--secondary);
-    margin-bottom: 80px;
+    margin-bottom: 5%;
     box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
 }
 
@@ -113,7 +113,7 @@ body {
     justify-content: center;
     width: 500px;
     gap: 100px;
-    margin: 10px 0 70px;
+    margin: 10px 0 5%;
 }
 
 .vs-bot,
