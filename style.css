@@ -26,7 +26,7 @@ body {
 
 .title {
     font-size: 3.5rem;
-    margin: 5px auto 8%;
+    margin: 2px auto 5%;
     color: var(--silver);
 }
 
@@ -163,7 +163,7 @@ body {
     flex-direction: row;
     align-items: center;
     justify-content: space-evenly;
-    margin: 20px 0 5%;
+    margin: 10px 0 2%;
     width: 50%;
 }
 
